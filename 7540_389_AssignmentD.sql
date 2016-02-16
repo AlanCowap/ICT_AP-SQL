@@ -1,1 +1,230 @@
+#ICT-AP class of 2016
+#City & Guilds Module 7540 Unit 389 SQL Programming Assignment_D
+
+#1
+/*
+List the last name, first name and employee number of all employees that have
+ a last name starting with S.
+*/
+SELECT last_name, first_name, employee_no FROM Employees
+	WHERE last_name like 's%';
+    
+#2
+/*
+List the last name, first name and employee number of all stock clerks who
+ were hired on or before 26 Aug 1998 sorted in ascending order of last name
+*/
+SELECT last_name, first_name, employee_no FROM Employees
+	WHERE job_id = 'ST_CLERK' AND hire_date <= '1998-08-26'
+    ORDER BY last_name ASC;
+
+#3
+/*
+List the department number, last name and salary of all employees who were
+hired between 15/11/98 and 07/12/99 sorted in ascending order of last name
+within department number.
+*/
+SELECT department_no, last_name, annual_salary FROM Employees
+	WHERE hire_date BETWEEN '1998-11-15' AND '1999-12-07'
+    ORDER BY department_no, last_name ASC;
+    
+#4
+/*
+List the last name, job and commission percentage of employees where the
+commission percentage is less than or equal 15% sorted in descending order
+of commission percentage.
+*/
+SELECT last_name, job_id, commission_percent FROM Employees
+	WHERE commission_percent <= '0.15'
+    ORDER BY commission_percent DESC;
+#OR
+SELECT Employees.last_name, Jobs.job_title, Employees.commission_percent
+	FROM Employees
+    INNER JOIN Jobs ON Employees.job_id = Jobs.job_id
+    WHERE Employees.commission_percent <= 0.15
+    ORDER BY Employees.commission_percent DESC;
+    
+#5
+/*
+Which jobs are found in the Administration and Human Resources departments?
+*/
+SELECT DISTINCT Jobs.job_title FROM Jobs
+	INNER JOIN Employees ON Employees.job_id = Jobs.job_id
+    WHERE department_no IN (20, 110);
+#OR
+SELECT DISTINCT Jobs.job_title FROM Jobs
+	INNER JOIN Employees ON Employees.job_id = Jobs.job_id
+    INNER JOIN Departments ON Departments.department_no = Employees.department_no
+    WHERE Departments.department_name IN ('Administration', 'Human Resources');
+    
+#6
+/*
+List the last name of all employees in the Marketing and Sales departments
+ together with their monthly salaries (rounded to 2 decimal places), sorted
+ in ascending order of last name.
+*/
+SELECT last_name, ROUND((annual_salary/12),2) FROM Employees
+	WHERE department_no IN (10, 60)
+    ORDER BY last_name ASC;
+
+#7
+/*
+Show the average salaries figure for one month displayed with no decimal places.
+*/
+SELECT ROUND(AVG(annual_salary) / 12, 0) AS 'Monthly Average Salary' FROM Employees;
+
+#8
+/*
+Show the total number of employees in the Finance department.
+*/
+SELECT COUNT(Employees.employee_no) FROM Employees
+	INNER JOIN Departments
+    ON Departments.department_no = Employees.department_no 
+    WHERE Departments.department_name = 'Finance';
+
+#9
+/*
+List the last name, first name, hire date and salary of all employees in the
+ UK sorted in ascending order of last name.
+*/
+SELECT Employees.last_name, Employees.first_name, Employees.hire_date, Employees.annual_salary
+	FROM Employees
+    INNER JOIN Departments
+		ON Employees.department_no = Departments.department_no
+    INNER JOIN Locations
+		ON Departments.location_id = Locations.location_id
+	WHERE Locations.country_id = 'UK'
+    ORDER BY Employees.last_name ASC;
+
+#10
+/*
+List the department number, and the highest salary of the department with
+ the highest average salary.
+*/
+SELECT DISTINCT department_no, AVG(annual_salary) AS 'Average Salary',
+	MAX(annual_salary) AS 'Max Salary'
+    FROM Employees
+    GROUP BY department_no
+    ORDER BY AVG(annual_salary) DESC
+    LIMIT 1;
+
+#11
+/*
+List the department number and name for all departments where no marketing
+ representatives work.
+*/
+SELECT DISTINCT department_no, department_name FROM Departments
+	WHERE department_no NOT IN (
+		SELECT DISTINCT department_no FROM Employees
+			WHERE job_id = 'MK_REP'
+    );
+
+#12
+/*
+Add the following new job
+SA_CLERK, Sales Clerk, 9000, 12000
+*/
+INSERT INTO Jobs VALUES ('SA_CLERK', 'Sales Clerk', 9000, 12000);
+#For testing...
+#DELETE FROM Jobs WHERE job_id = 'SA_CLERK';
+#SELECT * FROM Jobs;
+
+#13
+/*
+Update all the maximum salaries for jobs with an increase of 2000.
+*/
+UPDATE Jobs SET max_salary = max_salary + 2000;
+#SELECT * FROM Jobs;
+
+#14
+/*
+List all the data for jobs sorted in ascending order of maximum salary.
+*/
+SELECT * FROM Jobs ORDER BY max_salary ASC;
+
+#15
+/*
+Produce a list of employees showing percentage raises, employee numbers and old
+ and new salaries. Employees in departments 80 and 90 are given a 6% rise,
+ employees in departments 20 and 190 are given a 12% rise and employees in other
+ departments are not given a rise.
+*/
+SELECT 
+	CASE
+		WHEN department_no IN (80, 90) THEN '6%'
+        WHEN department_no IN (20, 190) THEN '12%'
+		ELSE '0.00%'
+	END
+		AS 'Raise',
+	employee_no,
+    CASE
+		WHEN department_no IN (80, 90) THEN ROUND(annual_salary * 1.06, 2)
+		WHEN department_no IN (20, 190) THEN ROUND(annual_salary * 1.12, 2)
+		ELSE ROUND(annual_salary, 2)
+	END
+		AS 'New Salary',
+	annual_salary AS 'Old Salary'
+    FROM Employees;
+
+#OR
+SELECT  employee_no,annual_salary,
+	CASE
+		WHEN department_no IN  (90,80) THEN annual_salary*1.06
+		WHEN department_no IN  (20,190) THEN annual_salary*1.12
+		ELSE annual_salary
+	END as 'NEW SALARY',
+	CASE
+		WHEN department_no IN  (90,80) THEN '6%'
+		WHEN department_no IN  (20,190) THEN '12%'
+		ELSE '0%'
+	END as '% rise'
+	FROM employees;
+
+#16
+/*
+See attached diagram;
+*/
+
+#17
+/*
+Create a new view for manager’s details only using all the fields from the employee table.
+Show all the fields and all the managers using the view for managers.
+*/
+#DROP VIEW IF EXISTS ManagerView;
+CREATE OR REPLACE VIEW ManagerView AS 
+	SELECT * FROM Employees
+		WHERE job_id LIKE '%MGR'
+        ORDER BY employee_no ASC;
+
+#18
+/*
+a) Drop the manager’s view.
+b) Recreate the manager’s view so that the salary field is no longer included.
+c) Use the ALTER statement to compile the manager’s view.
+*/
+DROP VIEW IF EXISTS ManagerView;
+
+CREATE OR REPLACE VIEW ManagerView AS 
+	SELECT employee_no, first_name, last_name  FROM Employees #etc
+		WHERE job_id LIKE '%MGR'
+        ORDER BY employee_no ASC;
+
+ALTER VIEW ManagerView AS 
+	SELECT employee_no, first_name, last_name  FROM Employees #etc
+		WHERE job_id LIKE '%MGR'
+        ORDER BY employee_no ASC;
+
+
+#19
+/*
+Show all the fields and all the managers using the view for managers.
+*/
+SELECT * FROM ManagerView;
+
+#20
+/*
+Print a copy of the data dictionary entry for the table employees
+*/
+SHOW COLUMNS FROM Employees;
+
 
